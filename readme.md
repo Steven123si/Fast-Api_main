@@ -1,6 +1,7 @@
+```markdown
 # API de la Tienda - FastAPI
 
-API REST desarrollada con FastAPI para gestionar productos y categorías de una tienda, organizada en routers separados.
+API REST desarrollada con FastAPI para gestionar productos y categorías de una tienda, organizada en routers separados e integrada con autenticación JWT y control de acceso basado en roles (RBAC).
 
 ## Requisitos
 
@@ -12,14 +13,32 @@ API REST desarrollada con FastAPI para gestionar productos y categorías de una 
 
 1. Clona el repositorio:
 ```bash
-   git clone <url-del-repositorio>
-   cd tienda-api
+git clone <url-del-repositorio>
+cd Fast-Api-2
+
 ```
 
-2. Instala las dependencias:
+2. (Recomendado) Crea y activa un entorno virtual:
+
 ```bash
-   pip install fastapi uvicorn
+# En Linux / macOS / WSL:
+python3 -m venv venv
+source venv/bin/activate
+
+# En Windows (CMD / PowerShell):
+python -m venv venv
+venv\Scripts\activate
+
 ```
+
+3. Instala las dependencias:
+
+```bash
+pip install fastapi uvicorn
+
+```
+
+> *Nota: Si la terminal no reconoce el comando `pip`, ejecuta `python -m pip install fastapi uvicorn` o `py -m pip install fastapi uvicorn`.*
 
 ## Ejecución
 
@@ -27,44 +46,67 @@ Para levantar el servidor:
 
 ```bash
 python -m uvicorn main:app --reload
+
 ```
 
 La API queda disponible en:
-- Servidor: http://127.0.0.1:8000
-- Documentación interactiva (Swagger): http://127.0.0.1:8000/docs
 
-## Estructura del proyecto
+* Servidor: http://127.0.0.1:8000
+* Documentación interactiva (Swagger): http://127.0.0.1:8000/docs
 
-Endpoints
+## Seguridad y Control de Acceso
 
-# Productos (`/productos`)
+La aplicación implementa protección de rutas mediante **JWT (JSON Web Tokens)** y middleware de autorización mediante dependencias (`Depends`):
 
-| Método | Ruta             | Descripción                  |
-|--------|------------------|-------------------------------|
-| GET    | /productos       | Listar todos los productos    |
-| GET    | /productos/{id}  | Obtener un producto por id    |
-| POST   | /productos       | Crear un nuevo producto        |
-| PUT    | /productos/{id}  | Actualizar un producto         |
-| DELETE | /productos/{id}  | Eliminar un producto           |
+* **Acceso Público:** Lectura de información (`GET`).
+* **Requiere Autenticación:** Creación y edición de registros (`POST`, `PUT`).
+* **Requiere Rol Administrador:** Eliminación de registros (`DELETE`).
 
-# Categorías (`/categorias`)
+---
 
-| Método | Ruta              | Descripción                    |
-|--------|-------------------|----------------------------------|
-| GET    | /categorias       | Listar todas las categorías      |
-| GET    | /categorias/{id}  | Obtener una categoría por id     |
-| POST   | /categorias       | Crear una nueva categoría         |
-| PUT    | /categorias/{id}  | Actualizar una categoría          |
-| DELETE | /categorias/{id}  | Eliminar una categoría            |
+## Endpoints
+
+### Autenticación (`/token`)
+
+| Método | Ruta | Descripción | Acceso |
+| --- | --- | --- | --- |
+| POST | /token | Iniciar sesión y obtener token de acceso JWT | Público |
+
+### Productos (`/productos`)
+
+| Método | Ruta | Descripción | Acceso |
+| --- | --- | --- | --- |
+| GET | /productos | Listar todos los productos | Público |
+| GET | /productos/{id} | Obtener un producto por id | Público |
+| POST | /productos | Crear un nuevo producto | Autenticado |
+| PUT | /productos/{id} | Actualizar un producto | Autenticado |
+| DELETE | /productos/{id} | Eliminar un producto | Rol Admin |
+
+### Categorías (`/categorias`)
+
+| Método | Ruta | Descripción | Acceso |
+| --- | --- | --- | --- |
+| GET | /categorias | Listar todas las categorías | Público |
+| GET | /categorias/{id} | Obtener una categoría por id | Público |
+| POST | /categorias | Crear una nueva categoría | Autenticado |
+| PUT | /categorias/{id} | Actualizar una categoría | Autenticado |
+| DELETE | /categorias/{id} | Eliminar una categoría | Rol Admin |
+
+---
 
 ## Pruebas
 
-Todos los endpoints se probaron manualmente desde `/docs` usando la opción "Try it out", incluyendo:
+Todos los endpoints se probaron manualmente desde Swagger UI (`/docs`) validando los flujos de seguridad:
 
-- Casos exitosos (200/201) para cada operación
-- Error 404 al consultar, actualizar o eliminar un id inexistente
-- Error 422 al enviar datos inválidos o incompletos en POST/PUT
+* **Sin Token (401 Unauthorized):** Verificado al intentar operaciones `POST`, `PUT` o `DELETE` sin estar autenticado.
+* **Usuario Estándar:** Verificada la creación y actualización exitosa (`201/200`), así como la restricción de borrado (`403 Forbidden`).
+* **Usuario Administrador:** Verificada la eliminación exitosa de recursos (`200 OK`).
+* **Manejo de errores comunes:** Respuestas `404 Not Found` para IDs inexistentes y `422 Unprocessable Entity` para esquemas de datos inválidos.
 
 ## Autor
 
 Steven - SENA, ficha 3169892, programa Análisis y Desarrollo de Software (ADSO)
+
+```
+
+```
