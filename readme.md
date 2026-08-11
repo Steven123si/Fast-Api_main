@@ -1,112 +1,115 @@
-```markdown
-# API de la Tienda - FastAPI
+# API de la Tienda - FastAPI & SQLite
 
-API REST desarrollada con FastAPI para gestionar productos y categorías de una tienda, organizada en routers separados e integrada con autenticación JWT y control de acceso basado en roles (RBAC).
+API REST desarrollada con **FastAPI** y **SQLite** para gestionar productos y categorías de una tienda, organizada en routers separados e integrada con autenticación **JWT** y control de acceso basado en roles (RBAC).
 
 ## Requisitos
 
 - Python 3.10+
-- FastAPI
-- Uvicorn
+- Git
 
 ## Instalación
 
-1. Clona el repositorio:
+1. Clona el repositorio e ingresa al directorio del proyecto:
 ```bash
 git clone <url-del-repositorio>
 cd Fast-Api-2
-
 ```
 
-2. (Recomendado) Crea y activa un entorno virtual:
+2. Crea y activa un entorno virtual:
 
+- Linux / macOS / WSL:
 ```bash
-# En Linux / macOS / WSL:
 python3 -m venv venv
 source venv/bin/activate
+```
 
-# En Windows (CMD / PowerShell):
+- Windows (CMD / PowerShell):
+```powershell
 python -m venv venv
 venv\Scripts\activate
-
 ```
 
-3. Instala las dependencias:
-
+3. Instala las dependencias necesarias:
 ```bash
 pip install fastapi uvicorn
-
+pip install python-multipart
+pip install bcrypt
+python -m pip install PyJWT
+pip install "passlib[bcrypt]"
+pip install email-validator
 ```
 
-> *Nota: Si la terminal no reconoce el comando `pip`, ejecuta `python -m pip install fastapi uvicorn` o `py -m pip install fastapi uvicorn`.*
+4. Ejecuta el script para poblar y estructurar la base de datos:
+```bash
+python SQLK/taller_sql.py
+```
 
 ## Ejecución
 
-Para levantar el servidor:
-
+Para iniciar el servidor de desarrollo con recarga automática:
 ```bash
 python -m uvicorn main:app --reload
-
 ```
 
-La API queda disponible en:
+Acceso al servicio:
+- Servidor base: http://127.0.0.1:8000
+- Documentación interactiva (Swagger UI): http://127.0.0.1:8000/docs
+- Documentación alternativa (ReDoc): http://127.0.0.1:8000/redoc
 
-* Servidor: http://127.0.0.1:8000
-* Documentación interactiva (Swagger): http://127.0.0.1:8000/docs
+## Usuarios de Ejemplo y Roles
 
-## Seguridad y Control de Acceso
+Para probar los endpoints protegidos desde Swagger UI (`/docs`), obtén un token desde `/token` usando una de las siguientes cuentas:
 
-La aplicación implementa protección de rutas mediante **JWT (JSON Web Tokens)** y middleware de autorización mediante dependencias (`Depends`):
+| Correo / Usuario | Contraseña | Rol | Permisos |
+| :--- | :--- | :--- | :--- |
+| `admin@tienda.com` | `admin123` | **admin** | Acceso total (`GET`, `POST`, `PUT`, `DELETE`) |
+| `ana@tienda.com` | `ana123` | **cliente** | Lectura y Escritura (`GET`, `POST`, `PUT`) |
 
-* **Acceso Público:** Lectura de información (`GET`).
-* **Requiere Autenticación:** Creación y edición de registros (`POST`, `PUT`).
-* **Requiere Rol Administrador:** Eliminación de registros (`DELETE`).
-
----
-
-## Endpoints
+## Endpoints de la API
 
 ### Autenticación (`/token`)
 
 | Método | Ruta | Descripción | Acceso |
-| --- | --- | --- | --- |
-| POST | /token | Iniciar sesión y obtener token de acceso JWT | Público |
+| :--- | :--- | :--- | :--- |
+| POST | `/token` | Iniciar sesión y recibir Token JWT | Público |
 
 ### Productos (`/productos`)
 
 | Método | Ruta | Descripción | Acceso |
-| --- | --- | --- | --- |
-| GET | /productos | Listar todos los productos | Público |
-| GET | /productos/{id} | Obtener un producto por id | Público |
-| POST | /productos | Crear un nuevo producto | Autenticado |
-| PUT | /productos/{id} | Actualizar un producto | Autenticado |
-| DELETE | /productos/{id} | Eliminar un producto | Rol Admin |
+| :--- | :--- | :--- | :--- |
+| GET | `/productos` | Listar todos los productos | Público |
+| GET | `/productos/{id}` | Obtener un producto por ID | Público |
+| POST | `/productos` | Crear un nuevo producto | Autenticado |
+| PUT | `/productos/{id}` | Actualizar un producto | Autenticado |
+| DELETE | `/productos/{id}` | Eliminar un producto | Rol Admin |
 
 ### Categorías (`/categorias`)
 
 | Método | Ruta | Descripción | Acceso |
-| --- | --- | --- | --- |
-| GET | /categorias | Listar todas las categorías | Público |
-| GET | /categorias/{id} | Obtener una categoría por id | Público |
-| POST | /categorias | Crear una nueva categoría | Autenticado |
-| PUT | /categorias/{id} | Actualizar una categoría | Autenticado |
-| DELETE | /categorias/{id} | Eliminar una categoría | Rol Admin |
+| :--- | :--- | :--- | :--- |
+| GET | `/categorias` | Listar todas las categorías | Público |
+| GET | `/categorias/{id}` | Obtener una categoría por ID | Público |
+| GET | `/categorias/{id}/productos` | **Reto Extra:** Categoría y lista de sus productos (`JOIN`) | Público |
+| POST | `/categorias` | Crear categoría (Nombre único) | Autenticado |
+| PUT | `/categorias/{id}` | Actualizar categoría | Autenticado |
+| DELETE | `/categorias/{id}` | Eliminar categoría (Verifica integridad relacional) | Rol Admin |
 
----
+## Criterios de Calidad
 
-## Pruebas
+- **Seguridad SQL:** Sentencias preparadas con parámetros `?` en todas las consultas para evitar inyección SQL.
+- **Manejo de Conexiones:** Cierre garantizado dentro de bloques `finally: conexion.close()` y confirmación de transacciones con `commit()`.
+- **Integridad Relacional:** La eliminación de categorías verifica primero que no existan productos vinculados; en caso de haberlos, responde con HTTP 400.
+- **Respuestas Estándar:** Manejo explícito de códigos HTTP 200, 201, 400, 401, 403 y 404.
 
-Todos los endpoints se probaron manualmente desde Swagger UI (`/docs`) validando los flujos de seguridad:
+## Exclusiones del Repositorio (.gitignore)
 
-* **Sin Token (401 Unauthorized):** Verificado al intentar operaciones `POST`, `PUT` o `DELETE` sin estar autenticado.
-* **Usuario Estándar:** Verificada la creación y actualización exitosa (`201/200`), así como la restricción de borrado (`403 Forbidden`).
-* **Usuario Administrador:** Verificada la eliminación exitosa de recursos (`200 OK`).
-* **Manejo de errores comunes:** Respuestas `404 Not Found` para IDs inexistentes y `422 Unprocessable Entity` para esquemas de datos inválidos.
+Se ignoran del control de versiones:
+- Entorno virtual (`venv/`)
+- Base de datos SQLite (`tienda.db`)
+- Archivos temporales de Python (`__pycache__/`)
 
 ## Autor
 
-Steven - SENA, ficha 3169892, programa Análisis y Desarrollo de Software (ADSO)
-
-```
-
-```
+**Steven**  
+SENA - Centro de Tecnología de la Manufactura Avanzada (CTMA)  
+Programa: Análisis y Desarrollo de Software (ADSO) | Ficha: 3169892
